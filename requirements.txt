@@ -5,7 +5,7 @@ configparser==3.7.4
 GDAL==3.0.1
 geographiclib==1.49
 geopy==1.20.0
-getthestuff==0.1.0
+sedas_pyapi>=0.3.0
 idna==2.8
 numpy==1.16.4
 packaging==19.0
