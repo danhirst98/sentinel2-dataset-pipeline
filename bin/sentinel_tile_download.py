@@ -5,8 +5,8 @@ import threading
 import time
 from datetime import datetime, timedelta
 
-from getthestuff.bulk_download import SeDASBulkDownload
-from getthestuff.sedas_api import SeDASAPI
+from sedas_pyapi.bulk_download import SeDASBulkDownload
+from sedas_pyapi.sedas_api import SeDASAPI
 from tqdm import tqdm
 
 
