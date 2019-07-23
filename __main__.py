@@ -1,12 +1,15 @@
 import getopt
 import sys
-
+import os
 from bin import pipeline
 
 
 def main(args):
-    unixOptions = "c:u:p:s:o:h:t:s:"
-    gnuOptions = ["confidence=", "user=", "password=", "tilepath=", "outputdir=", "hitdict=", "threads=", "size="]
+    os.chdir(sys.path[0])
+
+
+    unixOptions = "c:u:p:s:o:h:t:s:i:"
+    gnuOptions = ["confidence=", "user=", "password=", "tilepath=", "outputdir=", "hitdict=", "threads=", "size=","input="]
     try:
         arguments, values = getopt.getopt(args, unixOptions, gnuOptions)
     except getopt.error as err:
@@ -19,6 +22,7 @@ def main(args):
     password = ""
     tilepath = ""
     tifpath = ""
+    input = ""
     hitname = "hit.dictionary"
     threads = 1
     size = 256
@@ -42,9 +46,11 @@ def main(args):
             hitname = currentValue
 
         elif currentArgument in ("-t", "--threads"):
-            threads = currentValue
+            threads = int(currentValue)
         elif currentArgument in ("-s", "--size"):
             size = currentValue
+        elif currentArgument in ("-i", "--input"):
+            input = currentValue
 
     # Checks that all mandatory arguments have been given
     empty_args = []
@@ -56,6 +62,9 @@ def main(args):
         empty_args.append("tilepath")
     if not tifpath:
         empty_args.append("outputdir")
+    if not input:
+        empty_args.append("input")
+
 
     if empty_args:
         print("ERROR: the following mandatory arguments were not provided:\n%s" % str(empty_args))
@@ -65,7 +74,7 @@ def main(args):
     print("Size of all output files: %s" % size)
     print("Name of dictionary containing all mining polygons and the associated sentinel tiles: %s" % hitname)
 
-    pipeline.run_pipeline(confidence, username, password, tilepath, tifpath, hitname, threads, size)
+    pipeline.run_pipeline(confidence, username, password, tilepath, tifpath, hitname, threads, size,input)
 
 
 if __name__ == '__main__':

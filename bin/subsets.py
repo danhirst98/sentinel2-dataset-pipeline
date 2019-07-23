@@ -37,9 +37,6 @@ def rungpt(supplierIds, full_dict, tilepath, tifpath, size):
     # Stores all subsets that fails
     errorlist = []
 
-    if not os.path.isdir(tifpath):
-        os.mkdir(tifpath)
-
     # Identifies already subsetted images so we can skip them
     tif_folder = os.listdir(tifpath)
     tiffiles = [file for file in tif_folder if file.endswith(".tif")]
@@ -81,8 +78,10 @@ def create_subsets(hit_dict, miss_dict, tile_path, tif_path, size, threads=1):
     :param size: size of each tif in pixels
     :param threads: Number of threads
     """
-
     full_dict = merge_dicts(hit_dict, miss_dict)
+
+    if not os.path.isdir(tif_path):
+        os.mkdir(tif_path)
 
     # SNAP cannot handle very many threads, so we should limit to 5
     if threads > 5:

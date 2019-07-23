@@ -6,7 +6,7 @@ from tqdm import tqdm
 from bin.square_polygon import square_polygon
 
 
-def format_coords_myanmar(coords):
+def format_coords(coords):
     """
     Converts the coordinates in the myanmar json into a format that shapely polygon can read
 
@@ -35,7 +35,7 @@ def get_mine_details(confidence, square, size, features, idx):
     if mine_conf <= confidence:
         if feat['geometry']['type'] == "MultiPolygon":
             coord = feat['geometry']['coordinates']
-            polygon_coords = Polygon(format_coords_myanmar(coord))
+            polygon_coords = Polygon(format_coords(coord))
             if square:
                 centre = polygon_coords.centroid
                 polygon_coords = square_polygon(centre.y, centre.x, size)
@@ -44,7 +44,7 @@ def get_mine_details(confidence, square, size, features, idx):
     return False
 
 
-def get_polygons_myanmar(confidence, size):
+def get_polygons(confidence, size, input):
     """
     Makes a list of Polygon objects which we can use to download the appropriate tiles
 
@@ -52,29 +52,31 @@ def get_polygons_myanmar(confidence, size):
     :return: List of Polygon objects denoting the coordinates of the mines
     """
 
-    myanmar_coords = []
+    coordlist = []
 
     # Open file with mine locations and confidence
-    file = open('./data/myanmar_mines.json', "r")
+    file = open(str(input), "r")
     contents = json.loads(file.read())
 
     # Iterate through each mine, making a polygon for each one and adding it to myanmar_coords
 
     count = 0
     for feat in tqdm(contents['features'], desc='Identifying hit polygons', unit='polygon'):
-
-        mine_conf = feat['properties']['Confidence']
-
+        if 'Confidence' in feat['properties'].keys():
+            mine_conf = feat['properties']['Confidence']
+        else:
+            mine_conf = 1
         if mine_conf <= confidence:
-
+            coord = feat['geometry']['coordinates']
             if feat['geometry']['type'] == "MultiPolygon":
-                coord = feat['geometry']['coordinates']
-                polygon_coords = Polygon(format_coords_myanmar(coord))
+                polygon_coords = Polygon(format_coords(coord))
+                centroid = polygon_coords.centroid
+                centre = [centroid.x,centroid.y]
+            elif feat['geometry']['type'] == 'Point':
+                centre = list(coord)
+            polygon_coords = square_polygon(centre[1], centre[0], size)
 
-                centre = polygon_coords.centroid
-                polygon_coords = square_polygon(centre.y, centre.x, size)
+            coordlist.append((count, polygon_coords, mine_conf))
+            count += 1
 
-                myanmar_coords.append((count, polygon_coords, mine_conf))
-                count += 1
-
-    return myanmar_coords
+    return coordlist

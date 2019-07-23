@@ -2,12 +2,12 @@ import pickle
 from os.path import isfile
 
 from bin.find_misses import find_misses
-from bin.get_polygons import get_polygons_myanmar
+from bin.get_polygons import get_polygons
 from bin.sentinel_tile_download import download_tiles
 from bin.subsets import create_subsets
 
 
-def run_pipeline(confidence, username, password, tilepath, tifpath, hit_dict_name, threads, size):
+def run_pipeline(confidence, username, password, tilepath, tifpath, hit_dict_name, threads, size,input):
     """
     Runs the dataset pipeline
 
@@ -30,16 +30,16 @@ def run_pipeline(confidence, username, password, tilepath, tifpath, hit_dict_nam
             hit_dict = pickle.load(f)
     else:
         # 1. Create Polygons of affected areas
-        hitlist = get_polygons_myanmar(confidence, size)
+        hitlist = get_polygons(confidence, size,input)
 
         # 2. Download Sentinel Tiles
         hit_dict = download_tiles(hitlist, username, password, tilepath, hitpath, threads=threads)
-
     # 3. Find locations where there are no mines, to populate dataset
+    print(len(hit_dict.keys()))
     miss_dict = find_misses(hit_dict, tilepath, size)
 
     # 4. Create subsets from full image tiles
     create_subsets(hit_dict, miss_dict, tilepath, tifpath, size, threads)
 
     # 5. Convert to jpg
-    convert_to_png(tifpath, size)
+    #convert(tifpath, size)

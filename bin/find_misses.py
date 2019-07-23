@@ -1,6 +1,7 @@
 import os
 import xml.etree.ElementTree as et
 import zipfile
+from zipfile import BadZipFile
 from functools import partial
 from glob import glob
 from multiprocessing.pool import Pool
@@ -52,8 +53,7 @@ def extract_tile_polygon(im_path):
         ns = {'gco': "http://www.isotc211.org/2005/gco", 'gmd': "http://www.isotc211.org/2005/gmd"}
 
         xml = et.parse(z.open(inspire_path))
-        polygon_string = xml.find('gmd:identificationInfo/gmd:MD_DataIdentification/gmd:abstract/gco:CharacterString',
-                                  ns).text
+        polygon_string = xml.find('gmd:identificationInfo/gmd:MD_DataIdentification/gmd:abstract/gco:CharacterString',ns).text
 
     return sp.Polygon(format(polygon_string))
 
@@ -143,8 +143,10 @@ def find_misses_one_tile(num_hits, misses_per_image, size, hit_dict, tiles, idx)
     supplierId = os.path.splitext(os.path.basename(tiles[idx]))[0]
 
     tile_path = tiles[idx]
-    tile = extract_tile_polygon(tile_path)
-
+    try:
+        tile = extract_tile_polygon(tile_path)
+    except BadZipFile:
+        return False
     # Initialise miss_dict lists
 
     hit_list = hit_dict[supplierId]
@@ -185,9 +187,10 @@ def find_misses(hit_dict, tilepath, size):
     # Creates multiprocess pool to find all the misses
     find_misses_one_tile_partial = partial(find_misses_one_tile, num_hits, misses_per_image, size, hit_dict, images)
     with Pool() as pool:
-        for supplierId, miss_list in tqdm(pool.imap_unordered(find_misses_one_tile_partial, range(len(images))),
+        for result in tqdm(pool.imap_unordered(find_misses_one_tile_partial, range(len(images))),
                                           total=len(images), desc='Finding miss polygons', unit='polygon'):
-            miss_dict[supplierId] = miss_list
+            if result is not False:
+                miss_dict[result[0]] = result[1]
 
         pool.close()
         pool.join()
