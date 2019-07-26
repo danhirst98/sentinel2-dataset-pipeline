@@ -1,6 +1,5 @@
-import unittest
-
 import rasterio
+import unittest
 from s1_ard_pypeline.utils import data_validation
 
 

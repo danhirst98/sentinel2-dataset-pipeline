@@ -1,6 +1,5 @@
-from functools import partial
-
 import pyproj
+from functools import partial
 from shapely.geometry import Point, Polygon
 from shapely.ops import transform
 

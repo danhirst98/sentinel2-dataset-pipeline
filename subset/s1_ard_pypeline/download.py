@@ -4,10 +4,9 @@ import logging
 import posixpath
 import urllib
 from queue import Queue
-from threading import Thread
-
 from s1_ard_pypeline import get_config
 from s1_ard_pypeline.utils import s3_utils
+from threading import Thread
 
 
 def parse_args():

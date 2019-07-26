@@ -5,12 +5,11 @@ Take a list of file pairs and run them through the pipeline validating that they
 usage: batch_run.py [-h] -input INPUT -output OUTPUT -targets TARGETS
 """
 import argparse
+import botocore
 import logging
 import os
 import sys
 from os import path
-
-import botocore
 from s1_ard_pypeline import validate_coherence_input, get_config
 from s1_ard_pypeline.ard import ard
 from s1_ard_pypeline.run_coherence import CoherenceChain

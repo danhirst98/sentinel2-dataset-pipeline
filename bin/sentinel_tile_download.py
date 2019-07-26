@@ -1,4 +1,3 @@
-# getthestuff is a module created by Wil Selwood in the GI Team at the Catapult
 import os
 import pickle
 import threading
@@ -24,7 +23,6 @@ def request(arr, startdate, enddate, cloud_cover, hit_dict, downloader, sedas):
     :return: none
     """
 
-
     for hit in tqdm(arr):
         result_sar = sedas.search_optical(hit[1].envelope.wkt, startdate, enddate, maxCloudPercent=cloud_cover)
         supplierId = str(result_sar['products'][0]['supplierId'])
@@ -32,7 +30,7 @@ def request(arr, startdate, enddate, cloud_cover, hit_dict, downloader, sedas):
         if intersection:
             hit_dict[intersection[0]].append(hit)
         else:
-            print("Found mine in a new tile: %s. Beginning download request for this tile." % str(supplierId))
+            print("Found object in a new tile: %s. Beginning download request for this tile." % str(supplierId))
             hit_dict[supplierId] = [hit]
             downloader.add([result_sar['products'][0]])
 

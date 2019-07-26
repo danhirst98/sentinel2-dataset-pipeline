@@ -1,9 +1,8 @@
 #!python
 import argparse
 import logging
-import sys
-
 import rasterio
+import sys
 from s1_ard_pypeline.utils import product_name, data_validation
 
 """

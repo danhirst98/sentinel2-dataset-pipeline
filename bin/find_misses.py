@@ -1,14 +1,13 @@
 import os
+import shapely.geometry as sp
 import xml.etree.ElementTree as et
 import zipfile
-from zipfile import BadZipFile
 from functools import partial
 from glob import glob
 from multiprocessing.pool import Pool
 from random import random
-
-import shapely.geometry as sp
 from tqdm import tqdm
+from zipfile import BadZipFile
 
 from bin.square_polygon import square_polygon
 
@@ -53,7 +52,8 @@ def extract_tile_polygon(im_path):
         ns = {'gco': "http://www.isotc211.org/2005/gco", 'gmd': "http://www.isotc211.org/2005/gmd"}
 
         xml = et.parse(z.open(inspire_path))
-        polygon_string = xml.find('gmd:identificationInfo/gmd:MD_DataIdentification/gmd:abstract/gco:CharacterString',ns).text
+        polygon_string = xml.find('gmd:identificationInfo/gmd:MD_DataIdentification/gmd:abstract/gco:CharacterString',
+                                  ns).text
 
     return sp.Polygon(format(polygon_string))
 
@@ -86,8 +86,8 @@ def contains_hit_polygon(candidate_polygon, hit_list):
     :return: boolean
     """
 
-    for mine_poly in hit_list:
-        if mine_poly[1].envelope.intersects(candidate_polygon.envelope):
+    for poly in hit_list:
+        if poly[1].envelope.intersects(candidate_polygon.envelope):
             return True
     return False
 
@@ -188,7 +188,7 @@ def find_misses(hit_dict, tilepath, size):
     find_misses_one_tile_partial = partial(find_misses_one_tile, num_hits, misses_per_image, size, hit_dict, images)
     with Pool() as pool:
         for result in tqdm(pool.imap_unordered(find_misses_one_tile_partial, range(len(images))),
-                                          total=len(images), desc='Finding miss polygons', unit='polygon'):
+                           total=len(images), desc='Finding miss polygons', unit='polygon'):
             if result is not False:
                 miss_dict[result[0]] = result[1]
 

@@ -1,12 +1,11 @@
 #!python
+import botocore
 import logging
 import platform
 import re
 import stat as file_stat
 import sys
 from os import path, stat
-
-import botocore
 
 """
 This script will check over a system and make sure that it can be used for the ARD pipeline process.

@@ -4,10 +4,9 @@ import os
 import platform
 import shutil
 import subprocess
+from asynchronousfilereader import AsynchronousFileReader
 from datetime import datetime
 from zipfile import ZipFile
-
-from asynchronousfilereader import AsynchronousFileReader
 
 """
 This contains the generic steps of a processing pipeline. 

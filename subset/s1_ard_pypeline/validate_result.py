@@ -1,10 +1,9 @@
 #!python
 import argparse
 import logging
-import sys
-
 import numpy as np
 import rasterio
+import sys
 from s1_ard_pypeline.utils import data_validation
 
 """

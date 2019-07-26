@@ -3,9 +3,8 @@
 """Top-level package for Project Extruder."""
 import configparser
 import logging
-from os import environ
-
 import logstash
+from os import environ
 
 __author__ = """Wil Selwood"""
 __email__ = 'wil.selwood@sa.catapult.org.uk'
