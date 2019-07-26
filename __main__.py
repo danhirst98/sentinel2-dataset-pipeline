@@ -9,8 +9,8 @@ from bin import pipeline
 def main(args):
     os.chdir(sys.path[0])
 
-    unixOptions = "c:u:p:s:o:h:t:s:i:"
-    gnuOptions = ["confidence=", "user=", "password=", "tilepath=", "outputdir=", "hitdict=", "threads=", "size=",
+    unixOptions = "c:u:p:d:o:h:t:s:i:"
+    gnuOptions = ["confidence=", "user=", "password=", "downloadpath=", "outputpath=", "hitdict=", "threads=", "size=",
                   "input="]
     try:
         arguments, values = getopt.getopt(args, unixOptions, gnuOptions)
@@ -38,10 +38,10 @@ def main(args):
             username = currentValue
         elif currentArgument in ("-p", "--password"):
             password = currentValue
-        elif currentArgument in ("-s", "--tilepath"):
+        elif currentArgument in ("-d", "--downloadpath"):
             tilepath = currentValue
             print("Path where all Sentinel tiles will be stored: %s" % tilepath)
-        elif currentArgument in ("-o", "--outputdir"):
+        elif currentArgument in ("-o", "--outputpath"):
             tifpath = currentValue
             print("Will store all tif files in the folder: %s" % tifpath)
         elif currentArgument in ("-h", "--hitdict"):
@@ -71,6 +71,7 @@ def main(args):
     input_name = os.path.splitext(os.path.basename(input))[0]
     if not tilepath: tilepath = "../%s_tiles/" % input_name
     if not tifpath: tifpath = "../%s_tifs/" % input_name
+    if not hitname: hitname = "%s.dictionary" % input_name
         
 
     print("Number of threads: %s" % threads)
