@@ -24,7 +24,7 @@ def main(args):
     tilepath = ""
     tifpath = ""
     input = ""
-    hitname = "hit.dictionary"
+    hitname = ""
     threads = 1
     size = 256
     # evaluate given options
@@ -52,23 +52,25 @@ def main(args):
             size = currentValue
         elif currentArgument in ("-i", "--input"):
             input = currentValue
-
+    
+    
     # Checks that all mandatory arguments have been given
     empty_args = []
     if not username:
         empty_args.append("username")
     if not password:
         empty_args.append("password")
-    if not tilepath:
-        empty_args.append("tilepath")
-    if not tifpath:
-        empty_args.append("outputdir")
     if not input:
         empty_args.append("input")
 
     if empty_args:
         print("ERROR: the following mandatory arguments were not provided:\n%s" % str(empty_args))
         exit(2)
+        
+    input_name = os.path.splitext(os.path.basename(input))[0]
+    if not tilepath: tilepath = "../%s_tiles/" % input_name
+    if not tifpath: tifpath = "../%s_tifs/" % input_name
+        
 
     print("Number of threads: %s" % threads)
     print("Size of all output files: %s" % size)
