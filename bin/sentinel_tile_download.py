@@ -23,6 +23,8 @@ def request(arr, startdate, enddate, cloud_cover, hit_dict, downloader, sedas):
     :param sedas: SeDAS search object
     :return: none
     """
+
+
     for hit in tqdm(arr):
         result_sar = sedas.search_optical(hit[1].envelope.wkt, startdate, enddate, maxCloudPercent=cloud_cover)
         supplierId = str(result_sar['products'][0]['supplierId'])

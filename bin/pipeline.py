@@ -35,7 +35,7 @@ def run_pipeline(confidence, username, password, tilepath, tifpath, hit_dict_nam
         # 2. Download Sentinel Tiles
         hit_dict = download_tiles(hitlist, username, password, tilepath, hitpath, threads=threads)
     # 3. Find locations where there are no mines, to populate dataset
-    print(len(hit_dict.keys()))
+
     miss_dict = find_misses(hit_dict, tilepath, size)
 
     # 4. Create subsets from full image tiles
