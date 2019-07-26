@@ -1,6 +1,7 @@
 import getopt
 import os
 import sys
+from multiprocessing import cpu_count
 
 from bin import pipeline
 
@@ -25,7 +26,7 @@ def main(args):
     tifpath = ""
     input = ""
     hitname = ""
-    threads = 1
+    threads = cpu_count()
     size = 256
     # evaluate given options
     for currentArgument, currentValue in arguments:
