@@ -1,5 +1,5 @@
 import json
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon,Point
 from tqdm import tqdm
 
 from bin.square_polygon import square_polygon
@@ -16,6 +16,13 @@ def format_coords(coords):
         coords = coords[0]
 
     return [tuple(cd) for cd in coords]
+
+def check_duplicates(point,coordlist):
+    for item in coordlist:
+        polygon = item[1]
+        if point.within(polygon):
+            return True
+    return False
 
 def get_polygons(confidence, size, input):
     """
@@ -47,6 +54,10 @@ def get_polygons(confidence, size, input):
                 centre = [centroid.x, centroid.y]
             elif feat['geometry']['type'] == 'Point':
                 centre = list(coord)
+
+            point = Point(centre[1],centre[0])
+            if check_duplicates(point,coordlist): continue
+
             polygon_coords = square_polygon(centre[1], centre[0], size)
 
             coordlist.append((count, polygon_coords, classification))
