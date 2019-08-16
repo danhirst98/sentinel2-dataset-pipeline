@@ -74,7 +74,7 @@ def one_subset(supplierId, filename, polygon, tilepath, tifpath, size):
     return
 
 
-def subset_wrapper(supplierIds, full_dict, tilepath, tifpath, size, pbar):
+def subset_wrapper(supplierIds, full_dict, tilepath, tifpath, name, size, pbar):
     """
     Iterates through given Sentinel Tiles, subsetting all the images within its bounds
 
@@ -98,14 +98,14 @@ def subset_wrapper(supplierIds, full_dict, tilepath, tifpath, size, pbar):
             pbar.update(1)
             if int(count) in image_nums:
                 continue
-            filename = "%.5d_%s_%s" % (count, confidence, supplierId)
+            filename = "%.5d_%s_%s_%s" % (count, confidence, supplierId, name)
             one_subset(supplierId, filename, polygon, tilepath, tifpath, size)
 
 
     return
 
 
-def create_subsets(hit_dict, miss_dict, tile_path, tif_path, size, threads=1):
+def create_subsets(hit_dict, miss_dict, tile_path, tif_path, name, size, threads=1):
     """
     Converts full Sentinel tiles into tifs of hits and misses of the right size
 
