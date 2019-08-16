@@ -54,6 +54,6 @@ def run_pipeline(input, username, password, name, tilepath, tifpath, outpath, hi
         miss_dict = find_misses(hit_dict, tilepath, size, dense, misspath, threads)
 
     # 4. Create subsets from full image tiles
-    create_subsets(hit_dict, miss_dict, tilepath, tifpath, size, threads)
+    create_subsets(hit_dict, miss_dict, tilepath, tifpath, name, size, threads)
 
     convert(size, tifpath, outpath, threads)
