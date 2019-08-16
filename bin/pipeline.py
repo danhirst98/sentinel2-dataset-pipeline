@@ -1,13 +1,14 @@
 import pickle
-from os.path import isfile
+from os import listdir
+from os.path import isfile, isdir
 
 from bin.find_misses import find_misses
 from bin.get_polygons import get_polygons
 from bin.sentinel_tile_download import download_tiles
-from bin.subsets import create_subsets
+from bin.subset import create_subsets
 
 
-def run_pipeline(confidence, username, password, tilepath, tifpath, hit_dict_name, threads, size, input):
+def run_pipeline(confidence, username, password, tilepath, tifpath, hit_dict_name, threads, size, input, dense, clean):
     """
     Runs the dataset pipeline
 
@@ -22,10 +23,9 @@ def run_pipeline(confidence, username, password, tilepath, tifpath, hit_dict_nam
     :return:
     """
     # TODO: Add logging
-
     # 0.5 If hit_dict has already been written, use that instead to save time
     hitpath = './dicts/' + hit_dict_name
-    if isfile(hitpath):
+    if not clean and isfile(hitpath) and isdir(tilepath) and listdir(tilepath):
         with open(hitpath, 'rb') as f:
             hit_dict = pickle.load(f)
     else:
@@ -36,10 +36,15 @@ def run_pipeline(confidence, username, password, tilepath, tifpath, hit_dict_nam
         hit_dict = download_tiles(hitlist, username, password, tilepath, hitpath, threads=threads)
 
     # 3. Find locations where there aren't any hits in order to populate dataset with equal numbers of hits and misses
-    miss_dict = find_misses(hit_dict, tilepath, size)
+    miss_dict_name = hit_dict_name.split('.')[0] + '_misses.dictionary'
+    misspath = './dicts/' + miss_dict_name
+    if not clean and isfile(misspath):
+        with open(misspath, 'rb') as f:
+            miss_dict = pickle.load(f)
+    else:
+        miss_dict = find_misses(hit_dict, tilepath, size, dense, misspath, threads)
 
     # 4. Create subsets from full image tiles
     create_subsets(hit_dict, miss_dict, tilepath, tifpath, size, threads)
 
-    # 5. Convert to jpg
-    # convert(tifpath, size)
+    # TODO: Adds conv_modif_2.py functionality

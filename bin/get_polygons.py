@@ -1,5 +1,6 @@
 import json
-from shapely.geometry import Polygon,Point
+
+from shapely.geometry import Polygon, Point
 from tqdm import tqdm
 
 from bin.square_polygon import square_polygon
@@ -17,12 +18,21 @@ def format_coords(coords):
 
     return [tuple(cd) for cd in coords]
 
-def check_duplicates(point,coordlist):
+
+def check_duplicates(point, coordlist):
+    """
+    Checks if the AoI is within a previously generated polygon
+
+    :param point: shapely point of centre of AoI
+    :param coordlist: list of all coordinates
+    :return: boolean
+    """
     for item in coordlist:
         polygon = item[1]
         if point.within(polygon):
             return True
     return False
+
 
 def get_polygons(confidence, size, input):
     """
@@ -48,17 +58,23 @@ def get_polygons(confidence, size, input):
             classification = 1
         if classification <= confidence:
             coord = feat['geometry']['coordinates']
-            if feat['geometry']['type'] == "MultiPolygon":
+            if feat['geometry']['type'] == "MultiPolygon" or feat['geometry']['type'] == 'Polygon':
                 polygon_coords = Polygon(format_coords(coord))
                 centroid = polygon_coords.centroid
                 centre = [centroid.x, centroid.y]
             elif feat['geometry']['type'] == 'Point':
                 centre = list(coord)
+            # TODO: Add functionality for lines
+            point = Point(centre[1], centre[0])
 
-            point = Point(centre[1],centre[0])
-            if check_duplicates(point,coordlist): continue
+            # If Areas of Interest are too close together, then we skip to avoid duplicate dataset elements
+            if check_duplicates(point, coordlist):
+                continue
 
-            polygon_coords = square_polygon(centre[1], centre[0], size)
+            try:
+                polygon_coords = square_polygon(centre[1], centre[0], size)
+            except:
+                raise SyntaxError("Geojson must use lat/long coordinates")
 
             coordlist.append((count, polygon_coords, classification))
             count += 1

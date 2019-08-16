@@ -1,13 +1,15 @@
 import os
-import shapely.geometry as sp
+import pickle
+import threading
+import time
 import xml.etree.ElementTree as et
-import zipfile
 from functools import partial
 from glob import glob
 from multiprocessing.pool import Pool
 from random import random
+
+import shapely.geometry as sp
 from tqdm import tqdm
-from zipfile import BadZipFile
 
 from bin.square_polygon import square_polygon
 
@@ -38,23 +40,13 @@ def extract_tile_polygon(im_path):
     :param im_path: Path to Sentinel image zip file
     :return: shapely Polygon with the bounds of the tile.
     """
-    with zipfile.ZipFile(im_path) as z:
-        inspire_path = ''
-        for path in z.namelist():
-            if 'INSPIRE' in path:
-                inspire_path = path
-                break
+    inspire_path = os.path.join(im_path, 'INSPIRE.xml')
 
-        if not inspire_path:
-            raise Exception('Cannot find INSPIRE.xml in Sentinel-2 Zip file %s' % im_path)
-
-        # The INSPIRE file uses namespaces, so we need to pass these to the xml find function
-        ns = {'gco': "http://www.isotc211.org/2005/gco", 'gmd': "http://www.isotc211.org/2005/gmd"}
-
-        xml = et.parse(z.open(inspire_path))
-        polygon_string = xml.find('gmd:identificationInfo/gmd:MD_DataIdentification/gmd:abstract/gco:CharacterString',
-                                  ns).text
-
+    # The INSPIRE file uses namespaces, so we need to pass these to the xml find function
+    ns = {'gco': "http://www.isotc211.org/2005/gco", 'gmd': "http://www.isotc211.org/2005/gmd"}
+    xml = et.parse(inspire_path)
+    polygon_string = xml.find('gmd:identificationInfo/gmd:MD_DataIdentification/gmd:abstract/gco:CharacterString',
+                              ns).text
     return sp.Polygon(format(polygon_string))
 
 
@@ -145,7 +137,7 @@ def find_misses_one_tile(num_hits, misses_per_image, size, hit_dict, tiles, idx)
     tile_path = tiles[idx]
     try:
         tile = extract_tile_polygon(tile_path)
-    except BadZipFile:
+    except FileNotFoundError:
         return False
     # Initialise miss_dict lists
 
@@ -160,13 +152,99 @@ def find_misses_one_tile(num_hits, misses_per_image, size, hit_dict, tiles, idx)
     return (supplierId, miss_list)
 
 
-def find_misses(hit_dict, tilepath, size):
+def find_misses_one_tile_dense(num_hits, size, hit_dict, tile_path, miss_dict, pbar):
     """
-    Identifies polygons that will be classification misses for the dataset
+    Finds places not within AoIs to serve as comparisons for the dataset
+
+    :param num_hits: Number of areas of interest (int)
+    :param size: Size of one side of AoI square in pixels (int)
+    :param hit_dict: Dictionary of all AoIs
+    :param tile_path: path to all Sentinel tiles
+    :param miss_dict: Dictionary of areas not within AoIs
+    :param pbar: tqdm Progress bar
+    :return: none
+    """
+
+    # global counter variable that updates over all threads
+    global counter
+    counter = counter
+
+    supplierId = os.path.splitext(os.path.basename(tile_path))[0]
+
+    # Try to find the bounds of the Sentinel tile. If it fails, we won't use that tile
+    try:
+        tile = extract_tile_polygon(tile_path)
+    except FileNotFoundError:
+        return False
+
+    # Initialise miss_dict lists
+    miss_list = []
+    hit_list = hit_dict[supplierId]
+
+    # Each thread keeps doing this until the total number of misses is reached
+    while counter < num_hits:
+        counter += 1
+        miss = find_one_miss(tile, size, hit_list, miss_list)
+        id = num_hits + counter
+        miss_list.append((id, miss, 0))
+
+        pbar.update(1)
+
+    # Adds generated data to a dictionary of misses
+    miss_dict[supplierId] = miss_list
+    return
+
+
+def find_misses_dense(hit_dict, tilepath, size, threads):
+    """
+    Identifies polygons that will be classification misses for the dataset. Optimised for datasets with not much space between AoIs
 
     :param hit_dict: the dictionary containing all the classification hits
     :param tilepath: path where all Sentinel tiles are stored
     :param size: size of final images in pixels
+    :param threads: number of threads
+    :return: dictionary containing all classification misses
+    """
+
+    # initialises counter that functions as id numbers for the generated polygons
+    global counter
+    counter = 0
+
+    miss_dict = {}
+
+    images = glob(tilepath + '/*')
+    num_hits = sum([len(hit_dict[key]) for key in hit_dict.keys()])
+
+    # Creates threads
+    miss_threads = []
+
+    # Creates progress bar to monitor progress
+    pbar = tqdm(total=num_hits, desc='Finding miss polygons', unit='polygon')
+
+    # Threads the process of finding misses
+    for t in range(threads):
+        tile_path = images[t]
+        miss_threads.append(threading.Thread(target=find_misses_one_tile_dense, args=(
+            num_hits, size, hit_dict, tile_path, miss_dict, pbar)))
+        miss_threads[t].daemon = True
+        miss_threads[t].start()
+
+    # Checks if any thread is alive and waits until finished
+    while any([x.is_alive() for x in miss_threads]):
+        time.sleep(5)
+    pbar.close()
+
+    return miss_dict
+
+
+def find_misses_normal(hit_dict, tilepath, size, threads):
+    """
+    Identifies polygons that will be classification misses for the dataset. For all datasets that are not very dense
+
+    :param hit_dict: the dictionary containing all the classification hits
+    :param tilepath: path where all Sentinel tiles are stored
+    :param size: size of final images in pixels
+    :param threads: number of threads
     :return: dictionary containing all classification misses
     """
 
@@ -179,14 +257,13 @@ def find_misses(hit_dict, tilepath, size):
     num_hits = int(count)
 
     # Find number of sentinel tiles in dataset
-    images = glob(tilepath + '/*.zip')
+    images = glob(tilepath + '/*')
     num_images = len(images)
-
     misses_per_image = int(num_hits / num_images)
 
     # Creates multiprocess pool to find all the misses
     find_misses_one_tile_partial = partial(find_misses_one_tile, num_hits, misses_per_image, size, hit_dict, images)
-    with Pool() as pool:
+    with Pool(threads) as pool:
         for result in tqdm(pool.imap_unordered(find_misses_one_tile_partial, range(len(images))),
                            total=len(images), desc='Finding miss polygons', unit='polygon'):
             if result is not False:
@@ -196,3 +273,26 @@ def find_misses(hit_dict, tilepath, size):
         pool.join()
 
     return miss_dict
+
+
+def find_misses(hit_dict, tilepath, size, dense, misspath, threads):
+    """
+    Find miss polygons for the dataset. Uses normal method unless dense variable is True
+
+    :param hit_dict: the dictionary containing all the classification hits
+    :param tilepath: path where all Sentinel tiles are stored
+    :param size: size of final images in pixels
+    :param dense: boolean determining method of finding misses
+    :param misspath: path to miss dictionary (same as hit path)
+    :param threads: Number of threads
+    :return: none
+    """
+
+    if dense:
+        miss_dict = find_misses_dense(hit_dict, tilepath, size, threads)
+    else:
+        miss_dict = find_misses_normal(hit_dict, tilepath, size, threads)
+
+    # save the miss dictionary as a pickle file so we can access it in subsequent uses of this program
+    with open(misspath, 'wb') as f:
+        pickle.dump(miss_dict, f)

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" autoUpload="Always" serverName="jupyter@34.83.134.173:22">
+    <serverData>
+      <paths name="jupyter@104.199.127.36:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/jupyter/sentinel2_dataset_pipeline" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="jupyter@34.83.134.173:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/jupyter/sentinel2_dataset_pipeline" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="jupyter@34.83.215.6:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/jupyter/sentinel2_dataset_pipeline" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="jupyter@34.94.157.113:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/pycharm_project_711" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="jupyter@34.94.55.116:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/jupyter/sentinel2-dataset-pipeline" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="jupyter@34.94.83.225:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/jupyter/sentinel2-dataset-pipeline" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="jupyter@35.199.153.119:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/jupyter/sentinel2_dataset_pipeline" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="jupyter@35.247.41.87:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/jupyter/sentinel2_dataset_pipeline" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
+  </component>
+</project>
