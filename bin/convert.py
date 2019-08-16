@@ -64,13 +64,11 @@ def convert_batch(arr, side, options_list, destination, already_done, pbar):
     return
 
 
-def convert(size, sourcedir, destdir, name, threads):
+def convert(size, sourcedir, destdir, threads):
     if size <= 256 and size >= 1:
 
         options_list = ['-scale', '-b 4', '-b 3', '-b 2', '-of jpeg', '-ot Byte']
 
-        new_dir = '%s-jpg-%s' % (str(name), str(size))
-        destdir = os.path.join(destdir, new_dir)
         list = glob.glob(sourcedir + '/*.tif')
 
         if not os.path.isdir(destdir):
