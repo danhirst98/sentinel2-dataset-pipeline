@@ -10,7 +10,7 @@ from bin.sentinel_tile_download import download_tiles
 from bin.subset import create_subsets
 
 
-def run_pipeline(input, username, password, name, tilepath, outpath, hit_dict_name, threads, size, confidence, dense,
+def run_pipeline(input, username, password, name, tilepath, tifpath, outpath, hit_dict_name, threads, size, confidence, dense,
                  clean):
     """
     Runs the dataset pipeline
@@ -19,7 +19,8 @@ def run_pipeline(input, username, password, name, tilepath, outpath, hit_dict_na
     :param username: Username for SeDAS account
     :param password: Password for SeDAS account
     :param tilepath: path where downloaded Sentinel tiles should be placed
-    :param outpath: path where subsetted tifs should be placed
+    :param outpath: path where finished jpgs should be placed
+    :param tifpath: path where subsetted tifs should be placed
     :param hit_dict_name: name of the hit dictionary pickle file
     :param threads: Number of threads
     :param size: Size of final image files in pixels
@@ -53,6 +54,6 @@ def run_pipeline(input, username, password, name, tilepath, outpath, hit_dict_na
         miss_dict = find_misses(hit_dict, tilepath, size, dense, misspath, threads)
 
     # 4. Create subsets from full image tiles
-    create_subsets(hit_dict, miss_dict, tilepath, outpath, size, threads)
+    create_subsets(hit_dict, miss_dict, tilepath, tifpath, size, threads)
 
-    convert(size, outpath, "..", name, threads)
+    convert(size, tifpath, outpath, threads)
