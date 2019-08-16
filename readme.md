@@ -61,3 +61,5 @@ Logging hasn't been completed, and so the verbose mode will not create any furth
 Functionality is only available for geojsons containing Polygons, multipolygons or points. For multipolygons, only the first shape is selected, and not all of them
 
 Any questions can be sent to danielhirst1998@gmail.com
+
+# Long live interns!
