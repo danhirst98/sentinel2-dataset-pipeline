@@ -20,7 +20,7 @@ The package creates images of uniform size that are perfect for binary classifie
 1. We extract the relevant information from the GeoJSON. It takes the polygons or points and converts them into a bounding box of size `size`. It also extracts the confidence if available and assigns each object an id number.
 2. We search the SeDAS API for tiles that covers each bounding box, downloads them and stores them in `downloadpath`.
 3. We create 'miss' images that do not include the objects we want. This allows us to have both hits and misses with which we can accurately train an ml model.
-4. We subset and convert the Sentinel tiles into tifs of size `size`. Half of the tifs will have an object located in the centre of the image, and half of them will not. The files will be saved as `id_classification_tilename.tif`.
+4. We subset and convert the Sentinel tiles into tifs of size `size`. Half of the tifs will have an object located in the centre of the image, and half of them will not. The files will be saved as `numericalid_classification_tilename_name.tif`.
 5. We convert these tifs into 3 band jpgs for input into most ML libraries. The output jpgs can be found at the `outpath` variable or at `/name_jpgs/`
 
 
