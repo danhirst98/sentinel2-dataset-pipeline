@@ -29,7 +29,7 @@ The arguments to run the pipeline are as follows:
 * `username`: Your SeDAS username
 * `password`: Your SeDAS password
 * `input`: Path of the input GeoJSON. Usually stored in the data folder in the pipeline.
-* `name`: 
+* `name`: Identifying name you want to give output images and folders (if not specified below)
 
 
 Optional arguments to use are:
