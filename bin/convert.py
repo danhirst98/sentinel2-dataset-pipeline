@@ -8,7 +8,7 @@ from threading import Thread
 from tqdm import tqdm
 
 
-def convert_to_jpg(tif, side, options_list, destination):
+def convert_to_jpg(tif, side, options_list, name, destination):
     gdal.PushErrorHandler('CPLQuietErrorHandler')
 
     # load the file
@@ -45,26 +45,26 @@ def convert_to_jpg(tif, side, options_list, destination):
     options_string = " ".join(options_list)
     fileinfo = os.path.basename(tif).split('_')
 
-    jpgname = destination + '/' + fileinfo[0] + '_' + fileinfo[1] + '_' + str(side) + '.jpg'
+    jpgname = destination + '/' + name+ '_' + fileinfo[0] + '_' + fileinfo[1] + '_' + str(side) + '.jpg'
     gdal.Translate(jpgname, tif, options=options_string)
     return
 
 
-def convert_batch(arr, side, options_list, destination, already_done, pbar):
+def convert_batch(arr, side, options_list, destination, name, already_done, pbar):
     for el in arr:
         id = int(os.path.basename(el).split('_')[0])
         pbar.update(1)
         if id in already_done:
             continue
         try:
-            convert_to_jpg(el, side, options_list, destination)
+            convert_to_jpg(el, side, options_list, name, destination)
         except Exception:
             continue
 
     return
 
 
-def convert(size, sourcedir, destdir, threads):
+def convert(size, sourcedir, destdir, name, threads):
     if size <= 256 and size >= 1:
 
         options_list = ['-scale', '-b 4', '-b 3', '-b 2', '-of jpeg', '-ot Byte']
@@ -83,7 +83,7 @@ def convert(size, sourcedir, destdir, threads):
         for t in range(threads):
             arr = [list[i] for i in range(len(list)) if i % threads == t]
             conv_thread.append(
-                threading.Thread(target=convert_batch, args=(arr, size, options_list, destdir, already_done, pbar)))
+                threading.Thread(target=convert_batch, args=(arr, size, options_list, destdir, name, already_done, pbar)))
             conv_thread[t].daemon = True
             conv_thread[t].start()
 
