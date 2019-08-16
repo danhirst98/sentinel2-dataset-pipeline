@@ -4,8 +4,10 @@ This program converts a GeoJSON of objects and converts them into a dataset of i
 
 ## Installation
 
-1. Clone this project,
-2. Install packages from requirements.txt
+1. Clone this project
+2. Create conda environment using `conda create -n name python=3.7`
+3. Activate environment with `conda activate name`
+4. Install packages from requirements.txt by running `pip install -r requirements.txt`
 
 ## Steps Inside the Pipeline
 
