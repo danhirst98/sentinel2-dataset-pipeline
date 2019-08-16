@@ -1,14 +1,17 @@
+import logging
 import pickle
 from os import listdir
 from os.path import isfile, isdir
 
+from bin.convert import convert
 from bin.find_misses import find_misses
 from bin.get_polygons import get_polygons
 from bin.sentinel_tile_download import download_tiles
 from bin.subset import create_subsets
 
 
-def run_pipeline(confidence, username, password, tilepath, tifpath, hit_dict_name, threads, size, input, dense, clean):
+def run_pipeline(input, username, password, name, tilepath, outpath, hit_dict_name, threads, size, confidence, dense,
+                 clean):
     """
     Runs the dataset pipeline
 
@@ -16,18 +19,23 @@ def run_pipeline(confidence, username, password, tilepath, tifpath, hit_dict_nam
     :param username: Username for SeDAS account
     :param password: Password for SeDAS account
     :param tilepath: path where downloaded Sentinel tiles should be placed
-    :param tifpath: path where subsetted tifs should be placed
+    :param outpath: path where subsetted tifs should be placed
     :param hit_dict_name: name of the hit dictionary pickle file
     :param threads: Number of threads
     :param size: Size of final image files in pixels
-    :return:
+    :param clean: Bypasses dictionary files and does everything from scratch
+    :param dense: Uses dense version of find_misses
+    :return: none
     """
     # TODO: Add logging
     # 0.5 If hit_dict has already been written, use that instead to save time
+    logging.info("STAGE 1: Analysing input file and downloading imagery")
     hitpath = './dicts/' + hit_dict_name
     if not clean and isfile(hitpath) and isdir(tilepath) and listdir(tilepath):
+        logging.info("Found a dictionary file. Reading and bypassing tile download...")
         with open(hitpath, 'rb') as f:
             hit_dict = pickle.load(f)
+        logging.debug("Hit dictionary reading successful")
     else:
         # 1. Create Polygons of affected areas
         hitlist = get_polygons(confidence, size, input)
@@ -45,6 +53,6 @@ def run_pipeline(confidence, username, password, tilepath, tifpath, hit_dict_nam
         miss_dict = find_misses(hit_dict, tilepath, size, dense, misspath, threads)
 
     # 4. Create subsets from full image tiles
-    create_subsets(hit_dict, miss_dict, tilepath, tifpath, size, threads)
+    create_subsets(hit_dict, miss_dict, tilepath, outpath, size, threads)
 
-    # TODO: Adds conv_modif_2.py functionality
+    convert(size, outpath, "..", name, threads)

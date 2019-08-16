@@ -1,7 +1,5 @@
-from functools import partial
-
 import pyproj
-from pyproj.datadir import set_data_dir
+from functools import partial
 from shapely.geometry import Point, Polygon
 from shapely.ops import transform
 
@@ -15,7 +13,6 @@ def geodesic_point_buffer(lat, lon, metres):
     :param metres: metres (int)
     :return: list of tuples
     """
-    set_data_dir("/opt/anaconda3/envs/IMI/share/proj/proj.db")
     proj_wgs84 = pyproj.Proj(init='epsg:4326')
 
     # Azimuthal equidistant projection

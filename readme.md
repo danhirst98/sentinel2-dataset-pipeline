@@ -38,4 +38,3 @@ Optional arguments to use are:
 ## Issues
 
 The current pipeline does not allow the user to change the start and end dates for requesting images. Instead, it searches all images from the last 300 days. However, you can change this manually in `bin/sentinel_tile_download.py`.
-

@@ -1,10 +1,9 @@
 import csv
+import gdal
 import glob
 import os
 import threading
 import time
-
-import gdal
 from tqdm import tqdm
 
 
@@ -91,17 +90,17 @@ def subset_wrapper(supplierIds, full_dict, tilepath, tifpath, size, pbar):
     # Identifies already subsetted images so we can skip them
     tif_folder = os.listdir(tifpath)
     tiffiles = [file for file in tif_folder if file.endswith(".tif")]
-    image_nums = [file.split("_")[0] for file in tiffiles]
+    image_nums = [int(file.split("_")[0]) for file in tiffiles]
 
     # Iterates through each tile and performs subset for each polygon within that tile
     for supplierId in supplierIds:
         for count, polygon, confidence in full_dict[supplierId]:
-            if str(count) in image_nums:
-                print('Already downloaded. Continuing...')
+            pbar.update(1)
+            if int(count) in image_nums:
                 continue
             filename = "%.5d_%s_%s" % (count, confidence, supplierId)
             one_subset(supplierId, filename, polygon, tilepath, tifpath, size)
-            pbar.update(1)
+
 
     return
 
@@ -125,7 +124,7 @@ def create_subsets(hit_dict, miss_dict, tile_path, tif_path, size, threads=1):
     full_dict_len = sum([len(full_dict[x]) for x in full_dict.keys()])
 
     # Creates progress bar to monitor progress
-    pbar = tqdm(total=full_dict_len)
+    pbar = tqdm(total=full_dict_len, desc="Subsetting tiles", unit="image")
 
     subset_threads = []
     for t in range(threads):

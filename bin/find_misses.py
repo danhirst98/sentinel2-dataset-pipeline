@@ -1,5 +1,6 @@
 import os
 import pickle
+import shapely.geometry as sp
 import threading
 import time
 import xml.etree.ElementTree as et
@@ -7,8 +8,6 @@ from functools import partial
 from glob import glob
 from multiprocessing.pool import Pool
 from random import random
-
-import shapely.geometry as sp
 from tqdm import tqdm
 
 from bin.square_polygon import square_polygon
@@ -296,3 +295,5 @@ def find_misses(hit_dict, tilepath, size, dense, misspath, threads):
     # save the miss dictionary as a pickle file so we can access it in subsequent uses of this program
     with open(misspath, 'wb') as f:
         pickle.dump(miss_dict, f)
+
+    return miss_dict
