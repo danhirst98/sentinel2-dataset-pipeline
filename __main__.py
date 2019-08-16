@@ -20,7 +20,8 @@ def main():
     parser.add_argument("name", help="Identifying name for your dataset")
 
     parser.add_argument("--tilepath", help="Path for Sentinel 2 tiles to be stored")
-    parser.add_argument("--outpath", help="Path for output dataset")
+    parser.add_argument("--tifpath", help="Path for tif images")
+    parser.add_argument("--outpath", help="Path for output jpg images")
     parser.add_argument("--hitdict",
                         help="Name of dictionary storing polygon data (Only pass if Sentinel 2 tiles have already been downloaded")
     parser.add_argument("--threads", default=cpu_count(), help="Number of threads")
@@ -37,10 +38,15 @@ def main():
     else:
         tilepath = os.path.join("..", "%s_tiles" % args.name)
 
+    if args.tifpath:
+        tifpath = args.tifpath
+    else:
+        tifpath = os.path.join("..", "%s_tifs" % args.name)
+        
     if args.outpath:
         outpath = args.outpath
     else:
-        outpath = os.path.join("..", "%s_tifs" % args.name)
+        outpath = os.path.join("..", "%s_jpgs" % args.name)
 
     if args.hitdict:
         hitdict = args.hitdict
@@ -59,7 +65,7 @@ def main():
     print("Path to Sentinel 2 tiles: %s" % tilepath)
     print("Path to output dataset: %s" % outpath)
 
-    pipeline.run_pipeline(args.input, args.sedas_username, args.sedas_password, args.name, tilepath, outpath, hitdict,
+    pipeline.run_pipeline(args.input, args.sedas_username, args.sedas_password, args.name, tilepath, tifpath, outpath, hitdict,
                           int(args.threads), int(args.size), args.confidence, args.dense, args.clean)
 
 
