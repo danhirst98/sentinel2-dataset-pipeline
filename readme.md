@@ -3,7 +3,8 @@
 This program converts a GeoJSON of objects and converts them into a dataset of Sentinel 2 images on which you can train a machine learning model. 
 
 The package creates images of uniform size that are perfect for binary classifiers. The dataset will include 2 types of images:
-* 'Hits'
+* 'Hits' - Areas of Interest with the object you are trying to identify in the centre. This will be gotten from the dataset you parse.
+* 'Misses' - Images without the object you are trying to identify. These will serve as comparisons to train the ML model. These images will be randomly generated.
 
 ## Installation
 
