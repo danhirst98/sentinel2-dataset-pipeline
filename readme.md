@@ -29,10 +29,12 @@ The arguments to run the pipeline are as follows:
 * `username`: Your SeDAS username
 * `password`: Your SeDAS password
 * `input`: Path of the input GeoJSON. Usually stored in the data folder in the pipeline.
-* `tilepath`: The folder location where you want the full Sentinel tile images to be stored. Defaults to the directory before where the pipeline files are located.
-* `outpath`: The folder location where you want your finished dataset to be stored. Defaults to the directory before where the pipeline files are located.
+* `name`: 
+
 
 Optional arguments to use are:
+* `--tilepath`: The folder location where you want the full Sentinel tile images to be stored. Defaults to the directory before where the pipeline files are located.
+* `--tifpath`: The folder location where you want your dataset of tifs to be stored. Defaults to the directory before where the pipeline files are located.
 * `--confidence`: 
     Some GeoJSON datasets define the confidence they have that the image was correctly identified. In these cases, the value 3 denotes low confidence, 2 is medium confidence and 1 is high confidence. Should your dataset have this value, you can set the minimum confidence level you would like to have in your dataset. (optiona)
 * `--hitdict x`: The pipeline stores relevant information in a dictionary pickle file to speed up subsequent dataset creations with the same original GeoJSON. If you want to choose your own dictionary name, you can do so here. Defaults to the name of the `input-file-name.dictionary`. (Optional)
