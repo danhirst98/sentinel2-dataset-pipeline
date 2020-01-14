@@ -29,7 +29,8 @@ def main():
     parser.add_argument("--dense", action="store_true", help="Use alternative find_misses, adapted for dense datasets")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose mode")
     parser.add_argument("--clean", action="store_true", help="Do not look for past dictionaries or skip any steps")
-
+    parser.add_argument("--nomiss", action="store_true", help="Do not generate misses")
+    parser.add_argument("--sentinel",default=2,help="Sentinel 1 (1) or Sentinel 2 (2)")
     args = parser.parse_args()
 
     # Creates variables that haven't been initialised in command line
@@ -64,9 +65,10 @@ def main():
     print("Name of dictionary containing all mining polygons and the associated sentinel tiles: %s" % hitdict)
     print("Path to Sentinel 2 tiles: %s" % tilepath)
     print("Path to output dataset: %s" % outpath)
+    print("Getting images from Sentinel %s" % args.sentinel)
 
     pipeline.run_pipeline(args.input, args.sedas_username, args.sedas_password, args.name, tilepath, tifpath, outpath, hitdict,
-                          int(args.threads), int(args.size), args.confidence, args.dense, args.clean)
+                          int(args.threads), int(args.size), args.confidence, args.dense, args.clean,args.nomiss,args.sentinel)
 
 
 if __name__ == '__main__':

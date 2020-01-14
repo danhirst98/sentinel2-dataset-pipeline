@@ -7,11 +7,12 @@ from bin.convert import convert
 from bin.find_misses import find_misses
 from bin.get_polygons import get_polygons
 from bin.sentinel_tile_download import download_tiles
-from bin.subset import create_subsets
+from bin.subset import create_subsets,merge_dicts
+from bin.sentinel1_tile_download import sentinel1_tile_download
 
 
 def run_pipeline(input, username, password, name, tilepath, tifpath, outpath, hit_dict_name, threads, size, confidence, dense,
-                 clean):
+                 clean, no_miss,sentinel):
     """
     Runs the dataset pipeline
 
@@ -26,6 +27,7 @@ def run_pipeline(input, username, password, name, tilepath, tifpath, outpath, hi
     :param size: Size of final image files in pixels
     :param clean: Bypasses dictionary files and does everything from scratch
     :param dense: Uses dense version of find_misses
+    :param no_miss: Doesn't find misses
     :return: none
     """
     # TODO: Add logging
@@ -42,18 +44,22 @@ def run_pipeline(input, username, password, name, tilepath, tifpath, outpath, hi
         hitlist = get_polygons(confidence, size, input)
 
         # 2. Download Sentinel Tiles
-        hit_dict = download_tiles(hitlist, username, password, tilepath, hitpath, threads=threads)
+        hit_dict = download_tiles(hitlist, username, password, tilepath, hitpath, threads=threads,sentinel=int(sentinel))
 
     # 3. Find locations where there aren't any hits in order to populate dataset with equal numbers of hits and misses
-    miss_dict_name = hit_dict_name.split('.')[0] + '_misses.dictionary'
-    misspath = './dicts/' + miss_dict_name
-    if not clean and isfile(misspath):
-        with open(misspath, 'rb') as f:
-            miss_dict = pickle.load(f)
-    else:
-        miss_dict = find_misses(hit_dict, tilepath, size, dense, misspath, threads)
+    if not no_miss:
+        miss_dict_name = hit_dict_name.split('.')[0] + '_misses.dictionary'
+        misspath = './dicts/' + miss_dict_name
+        if not clean and isfile(misspath):
+            with open(misspath, 'rb') as f:
+                miss_dict = pickle.load(f)
+        else:
+            miss_dict = find_misses(hit_dict, tilepath, size, dense, misspath, threads)
 
     # 4. Create subsets from full image tiles
-    create_subsets(hit_dict, miss_dict, tilepath, tifpath, name, size, threads)
-
-    convert(size, tifpath, outpath, threads)
+    if no_miss==False:
+        full_dict = merge_dicts(hit_dict, miss_dict)
+    else:
+        full_dict=hit_dict
+    create_subsets(full_dict, tilepath, tifpath, name, size, threads,int(sentinel))
+    convert(size, tifpath, outpath,name, threads)

@@ -7,10 +7,14 @@ from datetime import datetime, timedelta
 
 from google.cloud import storage
 from sedas_pyapi.sedas_api import SeDASAPI
+from sedas_pyapi.bulk_download import SeDASBulkDownload
 from tqdm import tqdm
+from sentinelsat.sentinel import SentinelAPI
 
 
-def download_one_tile(supplierId, tilepath, bucket):
+
+
+def download_one_tile_S2(supplierId, tilepath, bucket):
     """
     Downloads an image from GCloud bucket into tilepath
 
@@ -42,7 +46,8 @@ def download_one_tile(supplierId, tilepath, bucket):
     return
 
 
-def request_tile(arr, startdate, enddate, cloud_cover, hit_dict, tilepath, bucket, sedas, pbar):
+
+def request_tile_S2(arr, startdate, enddate, cloud_cover, hit_dict, tilepath, bucket, sedas, pbar):
     """
     Requests to download image from SeDAS server
 
@@ -55,19 +60,79 @@ def request_tile(arr, startdate, enddate, cloud_cover, hit_dict, tilepath, bucke
     :param sedas: SeDAS search object
     :return: none
     """
+
     for hit in arr:
-        result = sedas.search_optical(hit[1].envelope.wkt, startdate, enddate, maxCloudPercent=cloud_cover)
+        result = sedas.search_sar(hit[1].envelope.wkt, startdate, enddate)
         supplierId = str(result['products'][0]['supplierId'])
         intersection = list(set([el['supplierId'] for el in result['products']]) & set(hit_dict.keys()))
         if intersection:
             hit_dict[intersection[0]].append(hit)
         else:
             hit_dict[supplierId] = [hit]
-            download_one_tile(result['products'][0]['supplierId'], tilepath, bucket)
+            download_one_tile_S2(result['products'][0]['supplierId'], tilepath, bucket)
         pbar.update(1)
 
 
-def download_tiles(hitlist, username, password, tilepath, hitpath, cloud_cover=5, threads=1):
+def request_tile_S1(arr, startdate, enddate, hit_dict, tilepath,scihub,pbar):
+    """
+    Requests to download image from SeDAS server
+    :param arr: array of hits to download, in the same format as hitlist
+    :param startdate: earliest date the Sentinel image can be taken
+    :param enddate: lstest date the Sentinel image can be taken
+    :param cloud_cover: maximum percentage of cloud cover in the image
+    :param hit_dict: dictionary of all hits, with supplierIds as keys
+    :param downloader: the SeDAS downloader object
+    :param sedas: SeDAS search object
+    :return: none
+    """
+
+    for hit in arr:
+        result = scihub.query(hit[1].envelope.wkt, date=(startdate, enddate),platformname='Sentinel-1',limit=20,producttype="GRD")
+        try:
+            supplierId = str(list(result.values())[0]['title'])
+        except:
+            print('No result. Continuing')
+            continue
+        intersection = list(set([el['title'] for el in list(result.values())]) & set(hit_dict.keys()))
+        if intersection:
+            hit_dict[intersection[0]].append(hit)
+        else:
+            hit_dict[supplierId] = [hit]
+            scihub.download(list(result.keys())[0], directory_path=tilepath)
+        pbar.update(1)
+
+def request_tile_S1_sedas(arr, startdate, enddate,  hit_dict, downloader, sedas, pbar):
+    """
+    Requests to download image from SeDAS server
+    :param arr: array of hits to download, in the same format as hitlist
+    :param startdate: earliest date the Sentinel image can be taken
+    :param enddate: lstest date the Sentinel image can be taken
+    :param cloud_cover: maximum percentage of cloud cover in the image
+    :param hit_dict: dictionary of all hits, with supplierIds as keys
+    :param downloader: the SeDAS downloader object
+    :param sedas: SeDAS search object
+    :return: none
+    """
+
+    for hit in arr:
+        result_sar = sedas.search_sar(hit[1].envelope.wkt, startdate, enddate, sarProductType="GRD")
+        try:
+            supplierId = str(result_sar['products'][0]['supplierId'])
+        except:
+            print("No result. Continuing")
+            continue
+        intersection = list(set([el['supplierId'] for el in result_sar['products']]) & set(hit_dict.keys()))
+        if intersection:
+            hit_dict[intersection[0]].append(hit)
+        else:
+            print("Found object in a new tile: %s. Beginning download request for this tile." % str(supplierId))
+            hit_dict[supplierId] = [hit]
+            downloader.add([result_sar['products'][0]])
+        pbar.update(1)
+
+
+
+def download_tiles(hitlist, username, password, tilepath, hitpath, cloud_cover=5, threads=1,sentinel=2):
     """
     Downloads all Sentinel tiles that include hit polygons
 
@@ -80,16 +145,21 @@ def download_tiles(hitlist, username, password, tilepath, hitpath, cloud_cover=5
     :param threads: Number of threads we will use to download the files
     :return: hit dictionary
     """
-
     # TODO: Add date change functionality
     # Sets the date range. Configured to search for images in the past 300 days
-    td = timedelta(days=300)
+    td = timedelta(days=60)
     endDate = datetime.now()
     startDate = endDate - td
     logging.basicConfig()
     logging.getLogger("sedas_api").setLevel(logging.ERROR)
 
-    sedas = SeDASAPI(username, password)
+    if sentinel==1:
+        scihub = SentinelAPI(username, password, 'https://scihub.copernicus.eu/dhus')
+        #sedas = SeDASAPI(username, password)
+        #downloader = SeDASBulkDownload(sedas, tilepath, parallel=threads)
+    else:
+        sedas = SeDASAPI(username, password)
+
 
     # Converts startdate & enddate to strings for input
     startDate = datetime.strftime(startDate, "%Y-%m-%dT%H:%M:%SZ")
@@ -106,9 +176,11 @@ def download_tiles(hitlist, username, password, tilepath, hitpath, cloud_cover=5
     print("Already downloaded %s images: %s" % (len(hit_dict.keys()), str(hit_dict.keys())))
 
     # Connects to the gcloud bucket containing all historical sentinel-2 imagery
-    bucket_name = "gcp-public-data-sentinel-2"
-    storage_client = storage.Client()
-    bucket = storage_client.get_bucket(bucket_name)
+
+    if sentinel==2:
+        bucket_name = "gcp-public-data-sentinel-2"
+        storage_client = storage.Client()
+        bucket = storage_client.get_bucket(bucket_name)
 
     # Progress bar
     pbar = tqdm(total=len(hitlist), desc='Analysing polygons and downloading Sentinel tiles', unit='polygon')
@@ -116,8 +188,13 @@ def download_tiles(hitlist, username, password, tilepath, hitpath, cloud_cover=5
     download_threads = []
     for t in range(threads):
         arr = [hitlist[i] for i in range(len(hitlist)) if i % threads == t]
-        download_threads.append(threading.Thread(target=request_tile, args=(
-            arr, startDate, endDate, cloud_cover, hit_dict, tilepath, bucket, sedas, pbar)))
+        if int(sentinel)==1:
+            download_threads.append(threading.Thread(target=request_tile_S1, args=(arr, startDate, endDate, hit_dict, tilepath, scihub,pbar)))
+            #download_threads.append(threading.Thread(target=request_tile_S1_sedas,
+            #                                         args=(arr, startDate, endDate, hit_dict, downloader, sedas, pbar)))
+        else:
+            download_threads.append(threading.Thread(target=request_tile_S2, args=(
+                arr, startDate, endDate, cloud_cover, hit_dict, tilepath, bucket, sedas, pbar)))
         download_threads[t].daemon = True
         download_threads[t].start()
 
@@ -126,6 +203,14 @@ def download_tiles(hitlist, username, password, tilepath, hitpath, cloud_cover=5
         time.sleep(5)
 
     pbar.close()
+
+        # Wait until all downloads are finished
+    '''
+    if sentinel==1:
+        while not downloader.is_done():
+            time.sleep(5)
+    '''
+
     # save the hit dictionary as a pickle file so we can access it in subsequent uses of this program
     with open(hitpath, 'wb') as f:
         pickle.dump(hit_dict, f)

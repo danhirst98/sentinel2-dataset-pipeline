@@ -5,6 +5,10 @@ import os
 import threading
 import time
 from tqdm import tqdm
+from zipfile import ZipFile
+import shapely
+
+from subset.s1_ard_pypeline.ard.ard import gpt
 
 
 def merge_dicts(hit_dict, miss_dict):
@@ -26,7 +30,7 @@ def merge_dicts(hit_dict, miss_dict):
     return full_dict
 
 
-def one_subset(supplierId, filename, polygon, tilepath, tifpath, size):
+def one_subset(supplierId, filename, polygon, tilepath, tifpath, size,sentinel=2):
     """
     Creates one subsetted image from the large sentinel tile
 
@@ -41,32 +45,43 @@ def one_subset(supplierId, filename, polygon, tilepath, tifpath, size):
 
     # gdalwarp inputs polygons as a csv file. This code creates that csv file so that we can run gdalwarp
     csvData = [["", "WKT"], [str(1), polygon.wkt]]
-    csvname = '/tmp/%s.csv' % filename[:-4]
+    csvname = './%s.csv' % filename[:-4]
     with open(csvname, 'w') as csvFile:
         writer = csv.writer(csvFile)
         writer.writerows(csvData)
     csvFile.close()
 
     # TODO: Change this in verbose mode
-    gdal.PushErrorHandler('CPLQuietErrorHandler')
-
+    #gdal.PushErrorHandler('CPLQuietErrorHandler')
+    os.environ["PROJ_LIB"]="C:/Users/danie/Anaconda3/envs/oilrig/Library/share/proj"
     # Finds all the image bands as jp2 files and sorts them alphabetically to retain correct order
     dir = os.path.join(tilepath, supplierId)
-    fulllist = sorted(glob.glob(dir + '/*.jp2'))
+    dir = os.path.abspath(dir)
+    dir = dir.replace('\\', '/')
 
+    if sentinel == 1:
+        file: ZipFile = ZipFile(dir + '.zip', 'r')
+        fulllist = sorted([name for name in file.namelist() if name.endswith('.tiff') or name.endswith('.dat')])
+        for tif in fulllist:
+            if not os.path.exists(dir+".SAFE"):
+                file.extract(tif,path=tilepath)
+        fulllist = [os.path.join(tilepath,tif).replace('\\', '/') for tif in fulllist]
+    else:
+        fulllist = sorted(glob.glob(dir + '/*.jp2'))
     # Builds VRT dataset to speed up conversion
-    vrtname = '/tmp/%s.vrt' % filename[:-4]
+
+    vrtname = './%s.vrt' % filename[:-4]
     buildvrt_options = gdal.BuildVRTOptions(separate=True, xRes=10, yRes=10)
     vrt_dataset = gdal.BuildVRT(destName=vrtname, srcDSOrSrcDSTab=fulllist, options=buildvrt_options)
 
     try:
         # Subsets image using gdalwarp
         warp_output = os.path.join(tifpath, filename + ".tif")
-        warp_options = gdal.WarpOptions(cropToCutline=True, cutlineDSName=csvname, dstSRS="EPSG:4326", width=size,
-                                        height=size)
+        warp_options = gdal.WarpOptions(cropToCutline=True, cutlineDSName=csvname, srcSRS="EPSG:4326", dstSRS="EPSG:4326", width=size,
+                                        height=size,multithread=True)
         gdal.Warp(warp_output, vrt_dataset, options=warp_options)
-    except SystemError:
-        print('Failed.')
+    except SystemError as e:
+        os.remove(csvname)
         return
 
     # removes the temporary csv file
@@ -74,7 +89,7 @@ def one_subset(supplierId, filename, polygon, tilepath, tifpath, size):
     return
 
 
-def subset_wrapper(supplierIds, full_dict, tilepath, tifpath, name, size, pbar):
+def subset_wrapper(supplierIds, full_dict, tilepath, tifpath, name, size, pbar,sentinel):
     """
     Iterates through given Sentinel Tiles, subsetting all the images within its bounds
 
@@ -99,13 +114,13 @@ def subset_wrapper(supplierIds, full_dict, tilepath, tifpath, name, size, pbar):
             if int(count) in image_nums:
                 continue
             filename = "%.5d_%s_%s_%s" % (count, confidence, supplierId, name)
-            one_subset(supplierId, filename, polygon, tilepath, tifpath, size)
+            one_subset(supplierId, filename, polygon, tilepath, tifpath, size,sentinel)
 
 
     return
 
 
-def create_subsets(hit_dict, miss_dict, tile_path, tif_path, name, size, threads=1):
+def create_subsets(full_dict, tile_path, tif_path, name, size, threads=1,sentinel=2):
     """
     Converts full Sentinel tiles into tifs of hits and misses of the right size
 
@@ -117,12 +132,11 @@ def create_subsets(hit_dict, miss_dict, tile_path, tif_path, name, size, threads
     :param threads: Number of threads
     """
 
-    # Creates one dictionary continaining both hit  polygons and miss polygons
-    full_dict = merge_dicts(hit_dict, miss_dict)
+    threads=3
+    # Creates one dictionary containing both hit  polygons and miss polygons
     if not os.path.isdir(tif_path):
         os.mkdir(tif_path)
     full_dict_len = sum([len(full_dict[x]) for x in full_dict.keys()])
-
     # Creates progress bar to monitor progress
     pbar = tqdm(total=full_dict_len, desc="Subsetting tiles", unit="image")
 
@@ -135,8 +149,11 @@ def create_subsets(hit_dict, miss_dict, tile_path, tif_path, name, size, threads
                 arr.append(list(full_dict.keys())[i])
 
         # Starts threading for subset
-        subset_threads.append(
-            threading.Thread(target=subset_wrapper, args=(arr, full_dict, tile_path, tif_path, size, pbar)))
+        if sentinel==1:
+            subset_threads.append(threading.Thread(target=rungpt, args=(arr, full_dict, tile_path, tif_path, pbar, size)))
+        else:
+            subset_threads.append(
+                threading.Thread(target=subset_wrapper, args=(arr, full_dict, tile_path, tif_path, name, size, pbar,sentinel)))
         subset_threads[t].daemon = True
         subset_threads[t].start()
 
@@ -146,3 +163,51 @@ def create_subsets(hit_dict, miss_dict, tile_path, tif_path, name, size, threads
 
     pbar.close()
     return
+
+def rungpt(supplierIds, full_dict, tilepath, tifpath, pbar, size):
+    """
+    Runs SNAP gpt command to resample and subset the a Sentinel tile
+    :param supplierIds: list of supplierIds of Sentinel tiles
+    :param full_dict: dictionary containing the polygons that will be subsetted in each tile
+    :param tilepath: directory path to the Sentinel tiles
+    :param tifpath: directory path to where tif files will be stored
+    """
+
+
+    # Stores all subsets that fails
+    errorlist = []
+
+    # Identifies already subsetted images so we can skip them
+    tif_folder = os.listdir(tifpath)
+    tiffiles = [file for file in tif_folder if file.endswith(".tif")]
+    image_nums = [file.split("_")[0] for file in tiffiles]
+
+    for supplierId in supplierIds:
+        #print(supplierId)
+
+        for count, polygon, confidence in full_dict[supplierId]:
+            if str(count) in image_nums:
+                print('Already downloaded. Continuing...')
+                continue
+            #print(polygon.envelope.wkt)
+            #poly = list(polygon.exterior.coords)
+            #polygon = [(p[1],p[0] )for p in poly]
+            #polygon = shapely.geometry.Polygon(polygon)
+
+            try:
+                pbar.update(1)
+                print('Subsetting polygon %s' % count)
+                # Runs a SNAP graph to resample to 10m resolution, subset to the geography, and to finally subset to a pixel of square length size
+                gpt(
+                    r'C:\Users\danie\PycharmProjects\oilrig\sentinel2-dataset-pipeline\subset\graphs\resample_and_subset.xml',
+                    {'count': str(count).zfill(5), 'confidence': confidence, 'polygon': polygon.envelope.wkt,
+                     'supplierId': supplierId,
+                     'tilepath': os.path.abspath(tilepath), 'tifpath': tifpath, 'size': size})
+
+            # If a process fails, it'll store the index of the subset where the failure occurred.
+            except Exception as e:
+                print(e)
+                print('Error with Polygon %s - category %s' % (count, confidence))
+                errorlist.append(count)
+                continue
+    print(errorlist)

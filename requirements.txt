@@ -9,8 +9,6 @@ google-cloud-storage==1.18.0
 google-resumable-media==0.3.2
 googleapis-common-protos==1.6.0
 idna==2.8
-mkl-fft==1.0.12
-mkl-random==1.0.2
 numpy==1.16.4
 protobuf==3.9.1
 pyasn1==0.4.6
