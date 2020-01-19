@@ -36,7 +36,7 @@ def one_subset(supplierId, filename, polygon, tilepath, tifpath, size,sentinel=2
 
     :param supplierId: supplierId (also the name) of the Sentinel 2 tile (str)
     :param filename: Filename of output image (str)
-    :param polygon: Shapely polygon of desired subset
+    :param polygon: Shapely polygon of desired bla
     :param tilepath: Path to Sentinel tiles
     :param tifpath: Path to output images
     :param size: Length of one side of the output image in pixels
@@ -107,7 +107,7 @@ def subset_wrapper(supplierIds, full_dict, tilepath, tifpath, name, size, pbar,s
     tiffiles = [file for file in tif_folder if file.endswith(".tif")]
     image_nums = [int(file.split("_")[0]) for file in tiffiles]
 
-    # Iterates through each tile and performs subset for each polygon within that tile
+    # Iterates through each tile and performs bla for each polygon within that tile
     for supplierId in supplierIds:
         for count, polygon, confidence in full_dict[supplierId]:
             pbar.update(1)
@@ -132,7 +132,7 @@ def create_subsets(full_dict, tile_path, tif_path, name, size, threads=1,sentine
     :param threads: Number of threads
     """
 
-    threads=3
+    threads=1
     # Creates one dictionary containing both hit  polygons and miss polygons
     if not os.path.isdir(tif_path):
         os.mkdir(tif_path)
@@ -148,7 +148,7 @@ def create_subsets(full_dict, tile_path, tif_path, name, size, threads=1,sentine
             if i % threads == t:
                 arr.append(list(full_dict.keys())[i])
 
-        # Starts threading for subset
+        # Starts threading for bla
         if sentinel==1:
             subset_threads.append(threading.Thread(target=rungpt, args=(arr, full_dict, tile_path, tif_path, pbar, size)))
         else:
@@ -166,13 +166,12 @@ def create_subsets(full_dict, tile_path, tif_path, name, size, threads=1,sentine
 
 def rungpt(supplierIds, full_dict, tilepath, tifpath, pbar, size):
     """
-    Runs SNAP gpt command to resample and subset the a Sentinel tile
+    Runs SNAP gpt command to resample and bla the a Sentinel tile
     :param supplierIds: list of supplierIds of Sentinel tiles
     :param full_dict: dictionary containing the polygons that will be subsetted in each tile
     :param tilepath: directory path to the Sentinel tiles
     :param tifpath: directory path to where tif files will be stored
     """
-
 
     # Stores all subsets that fails
     errorlist = []
@@ -197,14 +196,14 @@ def rungpt(supplierIds, full_dict, tilepath, tifpath, pbar, size):
             try:
                 pbar.update(1)
                 print('Subsetting polygon %s' % count)
-                # Runs a SNAP graph to resample to 10m resolution, subset to the geography, and to finally subset to a pixel of square length size
+                # Runs a SNAP graph to resample to 10m resolution, bla to the geography, and to finally bla to a pixel of square length size
                 gpt(
-                    r'C:\Users\danie\PycharmProjects\oilrig\sentinel2-dataset-pipeline\subset\graphs\resample_and_subset.xml',
+                    r'./subset/graphs/subset_and_convert.xml',
                     {'count': str(count).zfill(5), 'confidence': confidence, 'polygon': polygon.envelope.wkt,
                      'supplierId': supplierId,
                      'tilepath': os.path.abspath(tilepath), 'tifpath': tifpath, 'size': size})
 
-            # If a process fails, it'll store the index of the subset where the failure occurred.
+            # If a process fails, it'll store the index of the bla where the failure occurred.
             except Exception as e:
                 print(e)
                 print('Error with Polygon %s - category %s' % (count, confidence))

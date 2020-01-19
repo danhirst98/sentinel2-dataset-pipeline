@@ -155,8 +155,7 @@ def download_tiles(hitlist, username, password, tilepath, hitpath, cloud_cover=5
 
     if sentinel==1:
         scihub = SentinelAPI(username, password, 'https://scihub.copernicus.eu/dhus')
-        #sedas = SeDASAPI(username, password)
-        #downloader = SeDASBulkDownload(sedas, tilepath, parallel=threads)
+        threads = 2
     else:
         sedas = SeDASAPI(username, password)
 
@@ -202,14 +201,8 @@ def download_tiles(hitlist, username, password, tilepath, hitpath, cloud_cover=5
     while any([x.is_alive() for x in download_threads]):
         time.sleep(5)
 
-    pbar.close()
+    #pbar.close()
 
-        # Wait until all downloads are finished
-    '''
-    if sentinel==1:
-        while not downloader.is_done():
-            time.sleep(5)
-    '''
 
     # save the hit dictionary as a pickle file so we can access it in subsequent uses of this program
     with open(hitpath, 'wb') as f:
