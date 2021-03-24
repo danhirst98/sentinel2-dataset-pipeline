@@ -16,7 +16,7 @@ pyasn1-modules==0.2.6
 pyproj==2.2.1
 pytz==2019.2
 requests==2.22.0
-rsa==4.0
+rsa==4.1
 sedas-pyapi==0.4.1
 Shapely==1.6.4.post1
 six==1.12.0
